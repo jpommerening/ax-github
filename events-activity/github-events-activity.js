@@ -34,13 +34,13 @@ define( [
       this.eventBus = eventBus;
       this.features = features;
 
+      var eventsPublisher = throttledPublisherForFeature( this, 'events' );
+
       var baseOptions = {
          headers: {},
          onEvent: deduplicate( eventsPublisher.push ),
          onError: eventBus.publish.bind( eventBus, 'didEncounterError.GITHUB_EVENTS' )
       };
-
-      var eventsPublisher = throttledPublisherForFeature( this, 'events' );
 
       var streams = [];
       var ready = handleAuth( eventBus, features, 'auth' )
