@@ -8,14 +8,10 @@ define( [
    '../lib/handle-auth',
    '../lib/wait-for-event',
    '../lib/extract-pointers',
+   '../lib/throttled-publisher',
    '../lib/fetch-all'
-], function( patterns, handleAuth, waitForEvent, extractPointers, fetchAll ) {
+], function( patterns, handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, fetchAll ) {
    'use strict';
-
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-   var nullPublisher = {};
-   nullPublisher.replace = nullPublisher.update = nullPublisher.update = function() {};
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -31,18 +27,12 @@ define( [
       this.eventBus = eventBus;
       this.features = features;
 
-     var dataPublisher = features.data.resource ? {
-         replace: patterns.resources.replacePublisherForFeature( this, 'data' ),
-         update: patterns.resources.updatePublisherForFeature( this, 'data' ),
-         push: function( item ) {
-            return dataPublisher.update( [ { op: 'add', path: '/-', value: item } ] );
-         }
-      } : nullPublisher;
-
       var baseOptions = {
          method: 'GET',
          headers: {}
       };
+
+      var dataPublisher = throttledPublisherForFeature( this, 'data' );
 
       var ready = handleAuth( eventBus, features, 'auth' )
                      .then( setAuthHeader )

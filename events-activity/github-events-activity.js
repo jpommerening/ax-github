@@ -8,9 +8,10 @@ define( [
    '../lib/handle-auth',
    '../lib/wait-for-event',
    '../lib/extract-pointers',
+   '../lib/throttled-publisher',
    './http-event-stream',
    './socket-event-stream',
-], function( patterns, handleAuth, waitForEvent, extractPointers, HttpEventStream, SocketEventStream ) {
+], function( patterns, handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, HttpEventStream, SocketEventStream ) {
    'use strict';
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,11 +21,6 @@ define( [
       'https': HttpEventStream,
       'socket.io': SocketEventStream
    };
-
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-   var nullPublisher = {};
-   nullPublisher.replace = nullPublisher.update = nullPublisher.update = function() {};
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -38,19 +34,13 @@ define( [
       this.eventBus = eventBus;
       this.features = features;
 
-      var eventsPublisher = ( features.events && features.events.resource ) ? {
-         replace: throttleReplacements( patterns.resources.replacePublisherForFeature( this, 'events' ) ),
-         update: throttleUpdates( patterns.resources.updatePublisherForFeature( this, 'events' ) ),
-         push: function( item ) {
-            return eventsPublisher.update( [ { op: 'add', path: '/-', value: item } ] );
-         }
-      } : nullPublisher;
-
       var baseOptions = {
          headers: {},
          onEvent: deduplicate( eventsPublisher.push ),
          onError: eventBus.publish.bind( eventBus, 'didEncounterError.GITHUB_EVENTS' )
       };
+
+      var eventsPublisher = throttledPublisherForFeature( this, 'events' );
 
       var streams = [];
       var ready = handleAuth( eventBus, features, 'auth' )
