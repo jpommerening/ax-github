@@ -1,6 +1,6 @@
 # ax-github
 
-> Activites to provide GitHub data and events as resources
+> :octocat: Activites to provide GitHub data and events as resources
 
 
 ```json
@@ -14,11 +14,9 @@
             "flag": "authenticated"
          },
          "data": {
-            "resource": "repos",
+            "resource": "user",
             "sources": [
-               "https://api.github.com/repos/LaxarJS/laxar",
-               "https://api.github.com/repos/LaxarJS/laxar-patterns",
-               "https://api.github.com/repos/LaxarJS/laxar-uikit"
+               "https://api.github.com/user"
             ]
          }
       }
@@ -31,10 +29,10 @@
             "flag": "authenticated"
          },
          "data": {
-            "resource": "tags",
+            "resource": "repos",
             "sources": {
-               "resource": "repos",
-               "follow": "tags_url"
+               "resource": "user",
+               "follow": "repos_url"
             }
          }
       }
@@ -47,7 +45,7 @@
             "flag": "authenticated"
          },
          "events": {
-            "resource": "tags",
+            "resource": "events",
             "sources": {
                "resource": "repos",
                "follow": "events_url"
