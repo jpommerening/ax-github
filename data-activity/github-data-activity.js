@@ -1,29 +1,49 @@
-/**
- * Copyright 2015 aixigo AG
- * Released under the MIT license.
- * http://laxarjs.org
- */
-define( [
-   'laxar-patterns',
-   '../lib/handle-auth',
-   '../lib/wait-for-event',
-   '../lib/extract-pointers',
-   '../lib/throttled-publisher',
-   '../lib/fetch-all'
-], function( patterns, handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, fetchAll ) {
+define(['exports', 'laxar-patterns', '../lib/handle-auth', '../lib/wait-for-event', '../lib/extract-pointers', '../lib/throttled-publisher', '../lib/fetch-all'], function (exports, _laxarPatterns, _libHandleAuth, _libWaitForEvent, _libExtractPointers, _libThrottledPublisher, _libFetchAll) {
+   /**
+    * Copyright 2015 aixigo AG
+    * Released under the MIT license.
+    * http://laxarjs.org
+    */
+
    'use strict';
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+   Object.defineProperty(exports, '__esModule', {
+      value: true
+   });
 
-   Controller.injections = [ 'axEventBus', 'axFeatures' ];
+   function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-   Controller.create = function create( eventBus, features ) {
-      return new Controller( eventBus, features );
+   function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+   var _patterns = _interopRequireDefault(_laxarPatterns);
+
+   var _handleAuth = _interopRequireDefault(_libHandleAuth);
+
+   var _waitForEvent = _interopRequireDefault(_libWaitForEvent);
+
+   var _extractPointers = _interopRequireDefault(_libExtractPointers);
+
+   var _throttledPublisherForFeature = _interopRequireDefault(_libThrottledPublisher);
+
+   var _fetchAll = _interopRequireDefault(_libFetchAll);
+
+   var OUTCOME_ERROR = _patterns['default'].actions.OUTCOME_ERROR;
+   var OUTCOME_SUCCESS = _patterns['default'].actions.OUTCOME_SUCCESS;
+
+   var name = 'github-data-activity';
+   exports.name = name;
+   var injections = ['axEventBus', 'axFeatures'];
+   exports.injections = injections;
+   var create = function create(eventBus, features) {
+      return new Controller(eventBus, features);
    };
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+   exports.create = create;
+   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   function Controller( eventBus, features ) {
+   var Controller = function Controller(eventBus, features) {
+      _classCallCheck(this, Controller);
+
       this.eventBus = eventBus;
       this.features = features;
 
@@ -32,138 +52,124 @@ define( [
          headers: {}
       };
 
-      var dataPublisher = throttledPublisherForFeature( this, 'data' );
+      var ready = (0, _handleAuth['default'])(eventBus, features, 'auth').then(setAuthHeader).then((0, _waitForEvent['default'])(eventBus, 'beginLifecycleRequest'));
 
-      var ready = handleAuth( eventBus, features, 'auth' )
-                     .then( setAuthHeader )
-                     .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
+      var dataPublisher = (0, _throttledPublisherForFeature['default'])(this, 'data');
 
-      if( features.data.sources.resource ) {
-         patterns.resources.handlerFor( this )
-            .registerResourceFromFeature( 'data.sources', {
-               onReplace: function( event ) {
-                  Promise.all( provideResources( event.data ) ).then( dataPublisher.replace );
-               },
-               onUpdate: function( event ) {
-                  var patches = event.patches.map( mapPatchValue.bind( null, provideResource ) );
-                  Promise.all( patches.map( wrapPatchInPromise ) ).then( dataPublisher.update );
-               }
-            } );
-      } else if( features.data.sources.length ) {
-         Promise.all( provideResources( features.data.sources ) ).then( dataPublisher.replace );
+      if (features.data.sources.resource) {
+         _patterns['default'].resources.handlerFor(this).registerResourceFromFeature('data.sources', {
+            onReplace: function onReplace(event) {
+               Promise.all(provideResources(event.data)).then(dataPublisher.replace);
+            },
+            onUpdate: function onUpdate(event) {
+               var patches = event.patches.map(mapPatchValue.bind(null, provideResource));
+               Promise.all(patches.map(wrapPatchInPromise)).then(dataPublisher.update);
+            }
+         });
+      } else if (features.data.sources.length) {
+         Promise.all(provideResources(features.data.sources)).then(dataPublisher.replace);
       }
 
       var provideActions = features.data.onActions || [];
-      var provideHandler = createRequestHandler( eventBus, provideResource );
+      var provideHandler = createRequestHandler(eventBus, provideResource);
 
-      provideActions.forEach( function( action ) {
-         eventBus.subscribe( 'takeActionRequest.' + action, provideHandler );
-      } );
+      provideActions.forEach(function (action) {
+         eventBus.subscribe('takeActionRequest.' + action, provideHandler);
+      });
 
-      eventBus.subscribe( 'beginLifecycleRequest', function() {
-      } );
+      eventBus.subscribe('beginLifecycleRequest', function () {});
 
-      eventBus.subscribe( 'endLifecycleRequest', function() {
-      } );
+      eventBus.subscribe('endLifecycleRequest', function () {});
 
-      function setAuthHeader( data ) {
-         if( data && data.access_token ) {
-            baseOptions.headers[ 'Authorization' ] = 'token ' + data.access_token;
+      function setAuthHeader(data) {
+         if (data && data.access_token) {
+            baseOptions.headers['Authorization'] = 'token ' + data.access_token;
          } else {
-            delete baseOptions.headers[ 'Authorization' ];
+            delete baseOptions.headers['Authorization'];
          }
       }
 
-      function provideResources( sources ) {
-         return sources.map( provideResource );
+      function provideResources(sources) {
+         return sources.map(provideResource);
       }
 
-      function provideResource( source ) {
-         var options = Object.create( baseOptions );
+      function provideResource(source) {
+         var options = Object.create(baseOptions);
          var follow = source.follow || features.data.sources.follow;
 
-         return ready.then( function() {
-            return extractPointers( source, follow, function( url ) {
-               return fetchAll( url, options );
-            } );
-         } );
+         return ready.then(function () {
+            return (0, _extractPointers['default'])(source, follow, function (url) {
+               return (0, _fetchAll['default'])(url, options);
+            });
+         });
       }
-
    }
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   function mapPatchValue( callback, patch ) {
+   ;
+
+   function mapPatchValue(callback, patch) {
       var result = {
          op: patch.op,
          path: patch.path
       };
-      if( patch.from ) {
+      if (patch.from) {
          result.from = patch.from;
       }
-      if( patch.value ) {
-         result.value = callback( patch.value );
+      if (patch.value) {
+         result.value = callback(patch.value);
       }
       return result;
    }
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   function wrapPatchInPromise( patch ) {
-      if( patch.value ) {
-         return patch.value.then( function( value ) {
-            return mapPatchValue( function() {
+   function wrapPatchInPromise(patch) {
+      if (patch.value) {
+         return patch.value.then(function (value) {
+            return mapPatchValue(function () {
                return value;
-            }, patch );
-         } );
+            }, patch);
+         });
       } else {
-         return Promise.resolve( patch );
+         return Promise.resolve(patch);
       }
    }
 
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   function createRequestHandler( eventBus, provider ) {
-      var OUTCOME_ERROR = patterns.actions.OUTCOME_ERROR;
-      var OUTCOME_SUCCESS = patterns.actions.OUTCOME_SUCCESS;
+   function createRequestHandler(eventBus, provider) {
 
-      return function( event ) {
+      return function (event) {
          var action = event.action;
          var data = event.data;
          var resource = data.resource;
          var topic = action + '-' + resource;
 
-         return eventBus.publish( 'willTakeAction.' + topic, {
+         return eventBus.publish('willTakeAction.' + topic, {
             action: action,
             data: data
-         } ).then( function() {
-            return provider( data );
-         } ).then( function( data ) {
-            return eventBus.publish( 'didReplace.' + resource, {
+         }).then(function () {
+            return provider(data);
+         }).then(function (data) {
+            return eventBus.publish('didReplace.' + resource, {
                resource: resource,
                data: data
-            } );
-         } ).then( function() {
+            });
+         }).then(function () {
             return OUTCOME_SUCCESS;
-         }, function( error ) {
-            console.log( error );
+         }, function (error) {
+            console.log(error);
             return OUTCOME_ERROR;
-         } ).then( function( outcome ) {
-            return eventBus.publish( 'didTakeAction.' + topic + '.' + outcome, {
+         }).then(function (outcome) {
+            return eventBus.publish('didTakeAction.' + topic + '.' + outcome, {
                action: action,
                outcome: outcome,
                data: data
-            } );
-         } );
+            });
+         });
       };
    }
-
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-   return {
-      name: 'github-data-activity',
-      create: Controller.create,
-      injections: Controller.injections
-   };
-
-} );
+});
+//# sourceMappingURL=github-data-activity.js.map

@@ -1,0 +1,20 @@
+{
+   "name": "laxar-github",
+   "version": "0.1.0",
+   "description": "LaxarJS activities to effiviently communicate with the GitHub API",
+   "license": "MIT",
+   "scripts": {
+      "test": "grunt test",
+      "prepublish": "bower install && grunt",
+      "start": "grunt start"
+   },
+   "devDependencies": {
+      "bower": "~1.4.1",
+      "grunt": "~0.4.5",
+      "grunt-cli": "~0.1.13",
+      "grunt-babel": "~5.0.1",
+      "grunt-eslint": "~17.1.0",
+      "grunt-contrib-watch": "~0.6.1",
+      "load-grunt-tasks": "~3.2.0"
+   }
+}
