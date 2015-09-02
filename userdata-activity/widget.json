@@ -24,8 +24,7 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the user data.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                }
             }
          },
@@ -51,8 +50,7 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the user's repositories.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                }
             }
          },
@@ -64,8 +62,7 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the user's organizations.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                }
             }
          },
@@ -77,8 +74,7 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the user's public keys.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                }
             }
          },
@@ -90,8 +86,7 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the user's followers.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                }
             }
          },
@@ -103,8 +98,7 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the users the user is following.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                }
             }
          },
@@ -125,8 +119,7 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the user's starred repositories.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                }
             }
          },

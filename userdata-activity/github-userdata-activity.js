@@ -43,7 +43,6 @@ define( [
       } ).then( function( response ) {
          return response.json();
       } ).then( function( user ) {
-         console.log( 'got', 'user', user );
          publisher( user );
          return user;
       } );
@@ -68,10 +67,8 @@ define( [
             var options = Object.create( baseOptions );
             var args = encodeArguments( features[ feature ] );
             var url = user.url + '/' + feature + ( args.length ? '?' + args.join( '&' ) : '' );
-            console.log( 'fetch', feature, url );
             return fetchAll( url, options );
          } ).then( function( data ) {
-            console.log( 'got', feature, data );
             publisher( data );
             return data;
          } );
