@@ -17,14 +17,6 @@
             "required": [ "resource" ],
             "default": {},
             "properties": {
-               "onActions": {
-                  "type": "array",
-                  "description": "Provide event streams on given takeActionRequests.",
-                  "items": {
-                     "type": "string",
-                     "format": "topic"
-                  }
-               },
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish events.",

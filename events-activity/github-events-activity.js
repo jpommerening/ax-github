@@ -34,50 +34,41 @@ define( [
       this.eventBus = eventBus;
       this.features = features;
 
-      var eventsPublisher = throttledPublisherForFeature( this, 'events' );
-
-      var baseOptions = {
-         headers: {},
-         onEvent: deduplicate( eventsPublisher.push ),
-         onError: eventBus.publish.bind( eventBus, 'didEncounterError.GITHUB_EVENTS' )
-      };
-
       var streams = [];
       var ready = handleAuth( eventBus, features, 'auth' )
                      .then( setAuthHeader )
-                     .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) )
-                     .then( function() { eventsPublisher.replace( [] ) } );
+                     .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
+
+      var publisher = throttledPublisherForFeature( this, 'events' );
+
+      var baseOptions = {
+         headers: {},
+         onEvent: deduplicate( publisher.push ),
+         onError: eventBus.publish.bind( eventBus, 'didEncounterError.GITHUB_EVENTS' )
+      };
 
       if( features.events.sources.resource ) {
          patterns.resources.handlerFor( this )
             .registerResourceFromFeature( 'events.sources', {
                onReplace: function( event ) {
                   disconnectStreams( streams );
-                  eventsPublisher.replace( [] );
+                  publisher.replace( [] );
                   streams = provideStreams( event.data );
                },
                onUpdate: function( event ) {
                   var patches = event.patches.map( mapPatchValue.bind( null, provideStream ) );
                   var removed = removedItems( streams, patches );
                   disconnectStreams( removed );
-                  eventsPublisher.update( [] ); // TODO: determine removed indexes?
+                  publisher.update( [] ); // TODO: determine removed indexes?
                   patterns.json.applyPatch( streams, patches );
                }
             } );
       } else if( features.events.sources.length ) {
-         streams = provideStreams( features.events.sources );
+         ready.then( function() {
+            publisher.replace( [] );
+            streams = provideStreams( features.events.sources );
+         } );
       }
-
-      var provideActions = features.events.onActions || [];
-      var provideHandler = createRequestHandler( eventBus, function( source ) {
-         var stream = provideStream( source );
-         streams.push( stream );
-         return stream;
-      } );
-
-      provideActions.forEach( function( action ) {
-         eventBus.subscribe( 'takeActionRequest.' + action, provideHandler );
-      } );
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
       } );
@@ -154,36 +145,6 @@ define( [
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   function createRequestHandler( eventBus, provider ) {
-      var OUTCOME_ERROR = patterns.actions.OUTCOME_ERROR;
-      var OUTCOME_SUCCESS = patterns.actions.OUTCOME_SUCCESS;
-
-      return function( event ) {
-         var action = event.action;
-         var data = event.data;
-         var topic = action;
-
-         return eventBus.publish( 'willTakeAction.' + topic, {
-            action: action,
-            data: data
-         } ).then( function() {
-            return provider( data );
-         } ).then( function() {
-            return OUTCOME_SUCCESS;
-         }, function() {
-            return OUTCOME_ERROR;
-         } ).then( function( outcome ) {
-            return eventBus.publish( 'didTakeAction.' + topic + '.' + outcome, {
-               action: action,
-               outcome: outcome,
-               data: data
-            } );
-         } );
-      };
-   }
-
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
    function deduplicate( callback ) {
       var idx = 0;
       var ids = {};
@@ -195,65 +156,6 @@ define( [
             ids[ event.id ] = idx++;
          }
          return callback( event );
-      };
-   }
-
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-   function throttleReplacements( publisher, options ) {
-      var timeout;
-      var buffer;
-      var maxLatency = (options || {}).maxLatency || 150;
-
-      function replace() {
-         var data = buffer;
-         publisher( buffer );
-         timeout = setTimeout( function() {
-            if( buffer !== data ) {
-               publisher( buffer );
-            }
-            buffer = null;
-         }, maxLatency );
-      }
-
-      return function( data ) {
-         var first = !buffer;
-
-         buffer = data;
-
-         if( first ) {
-            replace();
-         }
-      };
-   }
-
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-   function throttleUpdates( publisher, options ) {
-      var timeout;
-      var batch = [];
-      var maxBatchSize = (options || {}).maxBatchSize || 20;
-      var maxLatency = (options || {}).maxLatency || 150;
-
-      function update() {
-         if( batch.length ) {
-            publisher( batch );
-            batch = [];
-         }
-         if( timeout ) {
-            clearTimeout( timeout );
-            timeout = null;
-         }
-      }
-
-      return function( patches ) {
-         batch.push.apply( batch, patches );
-
-         if( batch.length >= maxBatchSize ) {
-            update();
-         } else if( !timeout ) {
-            timeout = setTimeout( update, maxLatency );
-         }
       };
    }
 
