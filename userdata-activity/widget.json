@@ -18,7 +18,7 @@
             "properties": {
                "url": {
                   "type": "string",
-                  "description": "The user url to lookup.",
+                  "description": "The user URL to lookup.",
                   "default": "https://api.github.com/user"
                },
                "resource": {
@@ -28,15 +28,50 @@
                }
             }
          },
+         "orgs": {
+            "type": "object",
+            "description": "Configuration for publishing a GitHub user's organizations.",
+            "default": {},
+            "properties": {
+               "url": {
+                  "type": "string",
+                  "description": "The organizations URL to lookup.",
+                  "default": "https://api.github.com/user/orgs"
+               },
+               "resource": {
+                  "type": "string",
+                  "description": "The name of the resource under which to publish the user's organizations.",
+                  "format": "topic"
+               }
+            }
+         },
          "repos": {
             "type": "object",
             "description": "Configuration for publishing a GitHub user's repositories.",
             "default": {},
             "properties": {
-               "type": {
+               "url": {
+                  "type": "string",
+                  "description": "The repos URL to lookup.",
+                  "default": "https://api.github.com/user/repos"
+               },
+               "visibility": {
                   "type": "string",
                   "description": "Which type of repositories to show.",
-                  "valid": [ "all", "owner", "member" ]
+                  "valid": [ "all", "public", "private" ]
+               },
+               "affiliation": {
+                  "type": [ "string", "array" ],
+                  "description": "Which type of repositories to show.",
+                  "items": {
+                     "type": "string",
+                     "valid": [ "owner", "collaborator", "organization_member" ]
+                  }
+               },
+               "type": {
+                  "type": "string",
+                  "description": "Which type of repositories to show. Some may not work on all API endpoints.",
+                  "valid": [ "all", "owner", "member", "public", "private", "forks", "sources" ]
                },
                "sort": {
                   "type": "string",
@@ -50,18 +85,6 @@
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish the user's repositories.",
-                  "format": "topic"
-               }
-            }
-         },
-         "orgs": {
-            "type": "object",
-            "description": "Configuration for publishing a GitHub user's organizations.",
-            "default": {},
-            "properties": {
-               "resource": {
-                  "type": "string",
-                  "description": "The name of the resource under which to publish the user's organizations.",
                   "format": "topic"
                }
             }

@@ -29,49 +29,42 @@ define( [
                      .then( setAuthHeader )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
 
-      var publisher = features.user.resource && patterns.resources.replacePublisherForFeature( this, 'user' ) || function() {};
 
       var baseOptions = {
          method: 'GET',
          headers: {}
       };
 
-      var user = ready.then( function() {
-         var options = Object.create( baseOptions );
-         var url = features.user.url;
-         return fetch( url, options );
-      } ).then( function( response ) {
-         return response.json();
-      } ).then( function( user ) {
-         publisher( user );
-         return user;
-      } );
+      var user = ready
+         .then( request( 'user' ) )
+         .then( fetch )
+         .then( function( response ) {
+            var promise = response.json();
 
-      [
-         'repos',
+            if( features.user.resource ) {
+               promise = promise.then( publish( 'user' ) );
+            }
+
+            return promise;
+         } );
+
+      var data = ( [
          'orgs',
+         'repos',
          'keys',
          'followers',
          'following',
          'stars'
-      ].filter( function( feature ) {
+      ] ).filter( function( feature ) {
          return !!( features[ feature ] && features[ feature ].resource );
-      } ).forEach( function( feature ) {
-         var context = {
-            eventBus: eventBus,
-            features: features
-         };
-         var publisher = patterns.resources.replacePublisherForFeature( context, feature );
-
-         user.then( function( user ) {
-            var options = Object.create( baseOptions );
-            var args = encodeArguments( features[ feature ] );
-            var url = user.url + '/' + feature + ( args.length ? '?' + args.join( '&' ) : '' );
-            return fetchAll( url, options );
-         } ).then( function( data ) {
-            publisher( data );
-            return data;
-         } );
+      } ).reduce( function( data, feature ) {
+         data[ feature ] = data.user
+            .then( request( feature ) )
+            .then( fetchAll )
+            .then( publish( feature ) );
+         return data;
+      }, {
+         user: user
       } );
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
@@ -88,13 +81,41 @@ define( [
          }
       }
 
+      function request( feature ) {
+         return function( data ) {
+            var options = Object.create( baseOptions );
+            var url = features[ feature ] && features[ feature ].url || ( data.url + '/' + feature );
+            var args = encodeArguments( features.feature || {} );
+            return new Request( url + ( args.length ? '?' + args.join( '&' ) : '' ), options );
+         };
+      }
+
+      function publish( feature ) {
+         var context = {
+            eventBus: eventBus,
+            features: features
+         };
+         return wrap( patterns.resources.replacePublisherForFeature( context, feature ) );
+      }
+
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+   function wrap( fn ) {
+      return function( data ) {
+         return fn( data ).then( function() {
+            return data;
+         } );
+      };
+   }
+
+   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
    function encodeArguments( object ) {
       return Object.keys( object ).filter( function( key ) {
-         return typeof key !== 'undefined' && key !== 'resource';
+         return typeof key !== 'undefined' && key !== 'resource' && key !== 'url';
       } ).map( function( key ) {
          return encodeURIComponent( key ) + '=' + encodeURIComponent( object[ key ] );
       } );
