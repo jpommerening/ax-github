@@ -7,17 +7,19 @@
 "activies": [
 
    {
-      "widget": "amd:laxar-github/data-activity",
+      "widget": "amd:laxar-github/userdata-activity",
       "features": {
          "auth": {
             "resource": "accessToken",
             "flag": "authenticated"
          },
-         "data": {
+         "user": {
             "resource": "user",
-            "sources": [
-               "https://api.github.com/user"
-            ]
+         },
+         "repos": {
+            "resource": "repos",
+            "sort": "updated",
+            "direction": "desc"
          }
       }
    },
@@ -29,10 +31,10 @@
             "flag": "authenticated"
          },
          "data": {
-            "resource": "repos",
+            "resource": "issues",
             "sources": {
-               "resource": "user",
-               "follow": "repos_url"
+               "resource": "resource",
+               "follow": "issues_url"
             }
          }
       }
