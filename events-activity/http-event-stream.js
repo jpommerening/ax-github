@@ -32,24 +32,22 @@ define( [
       var eventTypes = this.events_.map( eventNameToType );
 
       this.client_ = createPollingClient();
-      this.eventFilter_ = eventTypes.indexOf( '*' ) >= 0 ?
+      this.eventFilter_ = this.events_.indexOf( '*' ) >= 0 ?
                           function( event ) { return true; }
-                        : function( event ) { return (eventTypes.indexOf( event.type ) >= 0); };
+                        : function( event ) { return ( eventTypes.indexOf( event.type ) >= 0 ); };
    }
 
    HttpEventStream.prototype = {
 
-      handleEvents_: function( response ) {
+      handleEvents_: function( data ) {
          if( this.onEvent_ ) {
-            response.json().then( function( data ) {
-               data.filter( this.eventFilter_ ).forEach( this.onEvent_ );
-            }.bind( this ) );
+            data.filter( this.eventFilter_ ).forEach( this.onEvent_ );
          }
       },
 
-      handleErrors_: function( response ) {
+      handleErrors_: function( error ) {
          if( this.onError_ ) {
-            this.onError_( response, response.status, response.headers );
+            this.onError_( error );
          }
       },
 
@@ -87,7 +85,7 @@ define( [
                      etags[ url ] = etag;
                   }
 
-                  handleEvents( response );
+                  response.json().then( handleEvents, handleErrors );
 
                   if( links.next ) {
                      return fetchAll( links.next );

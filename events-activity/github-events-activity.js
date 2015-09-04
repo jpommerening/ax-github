@@ -19,7 +19,8 @@ define( [
    var EventStream = {
       'http': HttpEventStream,
       'https': HttpEventStream,
-      'socket.io': SocketEventStream
+      'ws': SocketEventStream,
+      'wss': SocketEventStream
    };
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,7 +98,9 @@ define( [
 
          return ready.then( function() {
             return extractPointers( source, follow, function( url ) {
-               var stream = new EventStream[ source.type ]( options );
+               var match = /^(https?|wss?):/.exec( url );
+               var type = source.type || match[ 1 ];
+               var stream = new EventStream[ type ]( options );
                stream.connect( url );
                return stream;
             } );

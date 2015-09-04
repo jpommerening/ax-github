@@ -36,13 +36,13 @@
                      "follow": {
                         "type": [ "string", "array", "object" ],
                         "description": "Which fields to follow for URLs. Maps all leaves to resources.",
-                        "default": "url"
+                        "default": "events_url"
                      }
                   },
                   "items": {
                      "type": "object",
                      "description": "The event source",
-                     "required": [ "url", "type" ],
+                     "required": [ "url" ],
                      "properties": {
                         "follow": {
                            "type": [ "string", "array", "object" ],
