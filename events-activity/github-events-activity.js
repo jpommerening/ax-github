@@ -43,7 +43,9 @@ define( [
       var publisher = throttledPublisherForFeature( this, 'events' );
 
       var baseOptions = {
-         headers: {},
+         headers: {
+            Accept: 'application/vnd.github.v3+json'
+         },
          onEvent: deduplicate( publisher.push ),
          onError: eventBus.publish.bind( eventBus, 'didEncounterError.GITHUB_EVENTS' )
       };

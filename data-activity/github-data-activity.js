@@ -35,7 +35,9 @@ define( [
 
       var baseOptions = {
          method: 'GET',
-         headers: {}
+         headers: {
+            Accept: 'application/vnd.github.v3+json'
+         }
       };
 
       if( features.data.sources.resource ) {
