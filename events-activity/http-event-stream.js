@@ -4,8 +4,8 @@
  * http://laxarjs.org
  */
 define( [
-   '../lib/parse-links'
-], function( parseLinks ) {
+   'es6!../lib/parse-links'
+], function( parseLinks, lru ) {
    'use strict';
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////

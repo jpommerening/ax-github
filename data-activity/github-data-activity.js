@@ -5,11 +5,11 @@
  */
 define( [
    'laxar-patterns',
-   '../lib/handle-auth',
-   '../lib/wait-for-event',
-   '../lib/extract-pointers',
-   '../lib/throttled-publisher',
-   '../lib/fetch-all'
+   'es6!../lib/handle-auth',
+   'es6!../lib/wait-for-event',
+   'es6!../lib/extract-pointers',
+   'es6!../lib/throttled-publisher',
+   'es6!../lib/fetch-all'
 ], function( patterns, handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, fetchAll ) {
    'use strict';
 

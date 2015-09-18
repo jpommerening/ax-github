@@ -5,10 +5,10 @@
  */
 define( [
    'laxar-patterns',
-   '../lib/handle-auth',
-   '../lib/wait-for-event',
-   '../lib/extract-pointers',
-   '../lib/throttled-publisher',
+   'es6!../lib/handle-auth',
+   'es6!../lib/wait-for-event',
+   'es6!../lib/extract-pointers',
+   'es6!../lib/throttled-publisher',
    './http-event-stream',
    './socket-event-stream',
 ], function( patterns, handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, HttpEventStream, SocketEventStream ) {

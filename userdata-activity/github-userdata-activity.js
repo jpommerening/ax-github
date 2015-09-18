@@ -5,9 +5,9 @@
  */
 define( [
    'laxar-patterns',
-   '../lib/handle-auth',
-   '../lib/wait-for-event',
-   '../lib/fetch-all'
+   'es6!../lib/handle-auth',
+   'es6!../lib/wait-for-event',
+   'es6!../lib/fetch-all'
 ], function( patterns, handleAuth, waitForEvent, fetchAll ) {
    'use strict';
 
