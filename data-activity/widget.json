@@ -14,13 +14,13 @@
          "data": {
             "type": "object",
             "description": "Configuration for publishing GitHub data.",
+            "required": [ "resource", "sources" ],
             "default": {},
             "properties": {
                "resource": {
                   "type": "string",
                   "description": "The name of the resource under which to publish resources.",
-                  "format": "topic",
-                  "default": "data"
+                  "format": "topic"
                },
                "sources": {
                   "type": [ "array", "object" ],
@@ -36,27 +36,11 @@
                         "type": [ "string", "array", "object" ],
                         "description": "Which fields to follow for URLs. Maps all leaves to resources.",
                         "default": "url"
-                     }
-                  },
-                  "items": {
-                     "type": "object",
-                     "description": "The event source",
-                     "required": [],
-                     "properties": {
-                        "follow": {
-                           "type": [ "string", "array", "object" ],
-                           "description": "Which fields to follow for URLs. Maps all leaves to resources.",
-                           "default": "url"
-                        },
-                        "url": {
-                           "type": "string",
-                           "description": "The URL associated with the resource."
-                        },
-                        "resource": {
-                           "type": "string",
-                           "description": "The name under which to publish the resource.",
-                           "format": "topic"
-                        }
+                     },
+                     "init": {
+                        "type": "array",
+                        "description": "If no resource was given use this array instead.",
+                        "default": []
                      }
                   }
                }
@@ -77,6 +61,11 @@
                   "format": "topic"
                }
             }
+         },
+         "log": {
+            "type": "string",
+            "description": "Loglevel to use",
+            "default": null
          }
       }
    }

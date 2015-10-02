@@ -161,6 +161,11 @@
                   "format": "topic"
                }
             }
+         },
+         "log": {
+            "type": "string",
+            "description": "Loglevel to use",
+            "default": null
          }
       }
    }

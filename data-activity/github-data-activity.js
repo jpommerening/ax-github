@@ -44,15 +44,14 @@ define( [
          patterns.resources.handlerFor( this )
             .registerResourceFromFeature( 'data.sources', {
                onReplace: function( event ) {
-                  Promise.all( provideResources( event.data ) ).then( publisher.replace );
+                  return handleReplace( event.data );
                },
                onUpdate: function( event ) {
-                  var patches = event.patches.map( mapPatchValue.bind( null, provideResource ) );
-                  Promise.all( patches.map( wrapPatchInPromise ) ).then( publisher.update );
+                  return handleUpdate( event.patches );
                }
             } );
-      } else if( features.data.sources.length ) {
-         Promise.all( provideResources( features.data.sources ) ).then( publisher.replace );
+      } else if( features.data.sources.init ) {
+         handleReplace( features.data.sources.init );
       }
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
@@ -69,13 +68,22 @@ define( [
          }
       }
 
+      function handleReplace( data ) {
+         return Promise.all( provideResources( data ) ).then( publisher.replace );
+      }
+
+      function handleUpdate( patches ) {
+         var patches = event.patches.map( mapPatchValue.bind( null, provideResource ) );
+         return Promise.all( patches.map( wrapPatchInPromise ) ).then( publisher.update );
+      }
+
       function provideResources( sources ) {
          return sources.map( provideResource );
       }
 
       function provideResource( source ) {
          var options = Object.create( baseOptions );
-         var follow = source.follow || features.data.sources.follow;
+         var follow = features.data.sources.follow;
 
          return ready.then( function() {
             return extractPointers( source, follow, function( url ) {

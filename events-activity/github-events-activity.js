@@ -54,23 +54,14 @@ define( [
          patterns.resources.handlerFor( this )
             .registerResourceFromFeature( 'events.sources', {
                onReplace: function( event ) {
-                  disconnectStreams( streams );
-                  publisher.replace( [] );
-                  streams = provideStreams( event.data );
+                  return handleReplace( event.data );
                },
                onUpdate: function( event ) {
-                  var patches = event.patches.map( mapPatchValue.bind( null, provideStream ) );
-                  var removed = removedItems( streams, patches );
-                  disconnectStreams( removed );
-                  publisher.update( [] ); // TODO: determine removed indexes?
-                  patterns.json.applyPatch( streams, patches );
+                  return handleUpdate( event.patches );
                }
             } );
-      } else if( features.events.sources.length ) {
-         ready.then( function() {
-            publisher.replace( [] );
-            streams = provideStreams( features.events.sources );
-         } );
+      } else if( features.events.sources.init ) {
+         handleReplace( features.events.sources.init );
       }
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
@@ -88,13 +79,37 @@ define( [
          }
       }
 
+      function handleReplace( data ) {
+         disconnectStreams( streams );
+         streams = [];
+
+         return ready.then( function() {
+            publisher.replace( [] );
+            return Promise.all( streams = provideStreams( data ) );
+         } );
+      }
+
+      function handleUpdate( patches ) {
+         var promises = [];
+         var patches = event.patches.map( mapPatchValue.bind( null, function( source ) {
+            var promise = provideStream( source );
+            promises.push( promise );
+            return promise;
+         } ) );
+         var removed = removedItems( streams, patches );
+         disconnectStreams( removed );
+         publisher.update( [] ); // TODO: determine removed indexes?
+         patterns.json.applyPatch( streams, patches );
+         return Promise.all( promises );
+      }
+
       function provideStreams( sources ) {
          return sources.map( provideStream );
       }
 
       function provideStream( source ) {
          var options = Object.create( baseOptions );
-         var follow = source.follow || features.events.sources.follow;
+         var follow = features.events.sources.follow;
 
          options.events = source.events;
 
