@@ -104,7 +104,7 @@ define( [
 
       function handleUpdate( patches ) {
          var promises = [];
-         var patches = event.patches.map( mapPatchValue.bind( null, function( source ) {
+         patches = patches.map( mapPatchValue.bind( null, function( source ) {
             var promise = provideStream( source );
             promises.push( promise );
             return promise;

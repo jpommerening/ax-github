@@ -77,7 +77,7 @@ define( [
       }
 
       function handleUpdate( patches ) {
-         var patches = event.patches.map( mapPatchValue.bind( null, provideResource ) );
+         patches = patches.map( mapPatchValue.bind( null, provideResource ) );
          return Promise.all( patches.map( wrapPatchInPromise ) ).then( publisher.update );
       }
 
