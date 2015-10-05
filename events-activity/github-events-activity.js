@@ -4,14 +4,24 @@
  * http://laxarjs.org
  */
 define( [
-   'laxar-patterns',
+   'json-patch',
+   'es6!../lib/get-pointer',
    'es6!../lib/handle-auth',
    'es6!../lib/wait-for-event',
    'es6!../lib/extract-pointers',
    'es6!../lib/throttled-publisher',
    './http-event-stream',
    './socket-event-stream',
-], function( patterns, handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, HttpEventStream, SocketEventStream ) {
+], function(
+   jsonPatch,
+   getPointer,
+   handleAuth,
+   waitForEvent,
+   extractPointers,
+   throttledPublisherForFeature,
+   HttpEventStream,
+   SocketEventStream
+) {
    'use strict';
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,15 +62,12 @@ define( [
       };
 
       if( features.events.sources.resource ) {
-         patterns.resources.handlerFor( this )
-            .registerResourceFromFeature( 'events.sources', {
-               onReplace: function( event ) {
-                  return pushQueue( handleReplace, event.data );
-               },
-               onUpdate: function( event ) {
-                  return pushQueue( handleUpdate, event.patches );
-               }
-            } );
+         eventBus.subscribe( 'didReplace.' + features.events.sources.resource, function( event ) {
+            return pushQueue( handleReplace, event.data );
+         } );
+         eventBus.subscribe( 'didUpdate.' + features.events.sources.resource, function( event ) {
+            return pushQueue( handleUpdate, event.patches );
+         } );
       } else if( features.events.sources.init ) {
          pushQueue( handleReplace, features.events.sources.init );
       }
@@ -105,7 +112,7 @@ define( [
          var removed = removedItems( streams, patches );
          disconnectStreams( removed );
          publisher.update( [] ); // TODO: determine removed indexes?
-         patterns.json.applyPatch( streams, patches );
+         jsonPatch.apply( streams, patches );
          return Promise.all( promises );
       }
 
@@ -136,7 +143,7 @@ define( [
       return patches.filter( function( patch ) {
          return ( patch.op === 'remove' || patch.op === 'replace' );
       } ).map( function( patch ) {
-         return patterns.json.getPointer( items, patch.path );
+         return getPointer( items, patch.path );
       } );
    }
 

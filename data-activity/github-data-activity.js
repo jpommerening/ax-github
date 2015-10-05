@@ -4,13 +4,12 @@
  * http://laxarjs.org
  */
 define( [
-   'laxar-patterns',
    'es6!../lib/handle-auth',
    'es6!../lib/wait-for-event',
    'es6!../lib/extract-pointers',
    'es6!../lib/throttled-publisher',
    'es6!../lib/fetch-all'
-], function( patterns, handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, fetchAll ) {
+], function( handleAuth, waitForEvent, extractPointers, throttledPublisherForFeature, fetchAll ) {
    'use strict';
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,15 +41,12 @@ define( [
       };
 
       if( features.data.sources.resource ) {
-         patterns.resources.handlerFor( this )
-            .registerResourceFromFeature( 'data.sources', {
-               onReplace: function( event ) {
-                  return pushQueue( handleReplace, event.data );
-               },
-               onUpdate: function( event ) {
-                  return pushQueue( handleUpdate, event.patches );
-               }
-            } );
+         eventBus.subscribe( 'didReplace.' + features.data.sources.resource, function( event ) {
+            return pushQueue( handleReplace, event.data );
+         } );
+         eventBus.subscribe( 'didUpdate.' + features.data.sources.resource, function( event ) {
+            return pushQueue( handleUpdate, event.patches );
+         } );
       } else if( features.data.sources.init ) {
          pushQueue( handleReplace, features.data.sources.init );
       }
