@@ -39,6 +39,7 @@ define( [
       var ready = handleAuth( eventBus, features, 'auth' )
                      .then( setAuthHeader )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
+      var queue = ready;
 
       var publisher = throttledPublisherForFeature( this, 'events' );
 
@@ -54,14 +55,14 @@ define( [
          patterns.resources.handlerFor( this )
             .registerResourceFromFeature( 'events.sources', {
                onReplace: function( event ) {
-                  return handleReplace( event.data );
+                  return pushQueue( handleReplace, event.data );
                },
                onUpdate: function( event ) {
-                  return handleUpdate( event.patches );
+                  return pushQueue( handleUpdate, event.patches );
                }
             } );
       } else if( features.events.sources.init ) {
-         handleReplace( features.events.sources.init );
+         pushQueue( handleReplace, features.events.sources.init );
       }
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
@@ -70,6 +71,13 @@ define( [
       eventBus.subscribe( 'endLifecycleRequest', function() {
          disconnectStreams( streams );
       } );
+
+      function pushQueue( callback ) {
+         var args = [].slice.call( arguments, 1 );
+         return queue = queue.then( function() {
+            return callback.apply( null, args );
+         } );
+      }
 
       function setAuthHeader( data ) {
          if( data && data.access_token ) {
@@ -83,10 +91,8 @@ define( [
          disconnectStreams( streams );
          streams = [];
 
-         return ready.then( function() {
-            publisher.replace( [] );
-            return Promise.all( streams = provideStreams( data ) );
-         } );
+         publisher.replace( [] );
+         return Promise.all( streams = provideStreams( data ) );
       }
 
       function handleUpdate( patches ) {
@@ -113,14 +119,12 @@ define( [
 
          options.events = source.events;
 
-         return ready.then( function() {
-            return extractPointers( source, follow, function( url ) {
-               var match = /^(https?|wss?):/.exec( url );
-               var type = source.type || match[ 1 ];
-               var stream = new EventStream[ type ]( options );
-               stream.connect( url );
-               return stream;
-            } );
+         return extractPointers( source, follow, function( url ) {
+            var match = /^(https?|wss?):/.exec( url );
+            var type = source.type || match[ 1 ];
+            var stream = new EventStream[ type ]( options );
+            stream.connect( url );
+            return stream;
          } );
       }
 

@@ -30,6 +30,7 @@ define( [
       var ready = handleAuth( eventBus, features, 'auth' )
                      .then( setAuthHeader )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
+      var queue = ready;
 
       var publisher = throttledPublisherForFeature( this, 'data' );
 
@@ -44,14 +45,14 @@ define( [
          patterns.resources.handlerFor( this )
             .registerResourceFromFeature( 'data.sources', {
                onReplace: function( event ) {
-                  return handleReplace( event.data );
+                  return pushQueue( handleReplace, event.data );
                },
                onUpdate: function( event ) {
-                  return handleUpdate( event.patches );
+                  return pushQueue( handleUpdate, event.patches );
                }
             } );
       } else if( features.data.sources.init ) {
-         handleReplace( features.data.sources.init );
+         pushQueue( handleReplace, features.data.sources.init );
       }
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
@@ -59,6 +60,13 @@ define( [
 
       eventBus.subscribe( 'endLifecycleRequest', function() {
       } );
+
+      function pushQueue( callback ) {
+         var args = [].slice.call( arguments, 1 );
+         return queue = queue.then( function() {
+            return callback.apply( null, args );
+         } );
+      }
 
       function setAuthHeader( data ) {
          if( data && data.access_token ) {
@@ -85,10 +93,8 @@ define( [
          var options = Object.create( baseOptions );
          var follow = features.data.sources.follow;
 
-         return ready.then( function() {
-            return extractPointers( source, follow, function( url ) {
-               return url && fetchAll( url, options );
-            } );
+         return extractPointers( source, follow, function( url ) {
+            return url && fetchAll( url, options );
          } );
       }
 
