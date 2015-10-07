@@ -4,12 +4,14 @@
  * http://laxarjs.org
  */
 define( [
+   'json!./widget.json',
    'laxar-patterns',
    'es6!../lib/constants',
    'es6!../lib/handle-auth',
    'es6!../lib/wait-for-event',
    'es6!../lib/fetch-all'
 ], function(
+   spec,
    patterns,
    constants,
    handleAuth,
@@ -136,7 +138,7 @@ define( [
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    return {
-      name: 'github-userdata-activity',
+      name: spec.name,
       create: Controller.create,
       injections: Controller.injections
    };

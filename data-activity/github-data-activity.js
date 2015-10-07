@@ -4,6 +4,7 @@
  * http://laxarjs.org
  */
 define( [
+   'json!./widget.json',
    'es6!../lib/constants',
    'es6!../lib/handle-auth',
    'es6!../lib/wait-for-event',
@@ -12,6 +13,7 @@ define( [
    'es6!../lib/throttled-publisher',
    'es6!../lib/fetch-all'
 ], function(
+   spec,
    constants,
    handleAuth,
    waitForEvent,
@@ -103,7 +105,7 @@ define( [
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    return {
-      name: 'github-data-activity',
+      name: spec.name,
       create: Controller.create,
       injections: Controller.injections
    };

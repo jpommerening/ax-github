@@ -4,6 +4,7 @@
  * http://laxarjs.org
  */
 define( [
+   'json!./widget.json',
    'json-patch',
    'es6!../lib/get-pointer',
    'es6!../lib/handle-auth',
@@ -13,6 +14,7 @@ define( [
    './http-event-stream',
    './socket-event-stream',
 ], function(
+   spec,
    jsonPatch,
    getPointer,
    handleAuth,
@@ -194,7 +196,7 @@ define( [
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    return {
-      name: 'github-events-activity',
+      name: spec.name,
       create: Controller.create,
       injections: Controller.injections
    };
