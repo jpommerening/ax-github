@@ -45,21 +45,22 @@ define( [
       this.eventBus = eventBus;
       this.features = features;
 
+      var baseOptions = {
+         headers: {
+            Accept: 'application/vnd.github.v3+json'
+         }
+      };
+
       var streams = [];
       var ready = handleAuth( eventBus, features, 'auth' )
-                     .then( setAuthHeader )
+                     .then( handleAuth.setAuthHeader( baseOptions.headers ) )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
       var queue = ready;
 
       var publisher = throttledPublisherForFeature( this, 'events' );
 
-      var baseOptions = {
-         headers: {
-            Accept: 'application/vnd.github.v3+json'
-         },
-         onEvent: deduplicate( publisher.push ),
-         onError: eventBus.publish.bind( eventBus, 'didEncounterError.GITHUB_EVENTS' )
-      };
+      baseOptions.onEvent = deduplicate( publisher.push );
+      baseOptions.onError = publisher.error;
 
       if( features.events.sources.resource ) {
          eventBus.subscribe( 'didReplace.' + features.events.sources.resource, function( event ) {

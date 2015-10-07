@@ -5,10 +5,17 @@
  */
 define( [
    'laxar-patterns',
+   'es6!../lib/constants',
    'es6!../lib/handle-auth',
    'es6!../lib/wait-for-event',
    'es6!../lib/fetch-all'
-], function( patterns, handleAuth, waitForEvent, fetchAll ) {
+], function(
+   patterns,
+   constants,
+   handleAuth,
+   waitForEvent,
+   fetchAll
+) {
    'use strict';
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,17 +32,16 @@ define( [
       this.eventBus = eventBus;
       this.features = features;
 
-      var ready = handleAuth( eventBus, features, 'auth' )
-                     .then( setAuthHeader )
-                     .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
-
-
       var baseOptions = {
          method: 'GET',
          headers: {
-            Accept: 'application/vnd.github.v3+json'
+            Accept: constants.MIME_TYPE
          }
       };
+
+      var ready = handleAuth( eventBus, features, 'auth' )
+                     .then( handleAuth.setAuthHeader( baseOptions.headers ) )
+                     .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
 
       var user = ready
          .then( request( 'user' ) )
@@ -63,6 +69,10 @@ define( [
          data[ feature ] = data.user
             .then( request( feature ) )
             .then( fetchAll )
+            .then( null, function( error ) {
+               //errorPublisher( 'HTTP_GET', 'messages.i18nFailedLoadingResource', { url: url }, error );
+               return null;
+            } )
             .then( publish( feature ) );
          return data;
       }, {

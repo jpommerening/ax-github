@@ -15,7 +15,6 @@
             "type": "object",
             "description": "Configuration for publishing GitHub data.",
             "required": [ "resource", "sources" ],
-            "default": {},
             "properties": {
                "resource": {
                   "type": "string",
@@ -23,7 +22,7 @@
                   "format": "topic"
                },
                "sources": {
-                  "type": [ "array", "object" ],
+                  "type": "object",
                   "description": "Event sources.",
                   "default": [],
                   "properties": {
@@ -46,6 +45,14 @@
                }
             }
          },
+         "messages": {
+            "type": "object",
+            "description": "Configuration of messages published via didEncounterError or didValidate events.",
+            "default": {},
+            "properties": {
+               "i18nFailedLoadingResource": { "type": [ "object", "string" ] }
+            }
+         },
          "auth": {
             "type": "object",
             "description": "Authorization with the GitHub API",
@@ -61,11 +68,6 @@
                   "format": "topic"
                }
             }
-         },
-         "log": {
-            "type": "string",
-            "description": "Loglevel to use",
-            "default": null
          }
       }
    }
