@@ -1,0 +1,82 @@
+{
+   "name": "github-contents-activity",
+   "description": "Request versioned file contents data from GitHub",
+
+   "integration": {
+      "technology": "plain",
+      "type": "activity"
+   },
+
+   "features": {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "type": "object",
+      "properties": {
+         "contents": {
+            "type": "object",
+            "description": "Configuration for publishing GitHub data.",
+            "required": [ "resource", "sources" ],
+            "properties": {
+               "resource": {
+                  "type": "string",
+                  "description": "The name of the resource under which to publish data.",
+                  "format": "topic"
+               },
+               "path": {
+                  "type": "string",
+                  "description": "The file path to download."
+               },
+               "type": {
+                  "type": "string",
+                  "description": "A custom media type to request (see https://developer.github.com/v3/repos/contents/#custom-media-types).",
+                  "valid": [ "raw", "html" ]
+               },
+               "sources": {
+                  "type": "object",
+                  "description": "Objects containing *_url fields to follow (see https://developer.github.com/v3/#hypermedia).",
+                  "properties": {
+                     "resource": {
+                        "type": "string",
+                        "description": "The name of the resource supplying the the sources.",
+                        "format": "topic"
+                     },
+                     "fields": {
+                        "type": [ "string", "array", "object" ],
+                        "description": "Which fields to follow for URLs. Maps all leaves to resources.",
+                        "default": "contents_url"
+                     },
+                     "init": {
+                        "type": "array",
+                        "description": "If no resource was given use this array instead.",
+                        "default": []
+                     }
+                  }
+               }
+            }
+         },
+         "messages": {
+            "type": "object",
+            "description": "Configuration of messages published via didEncounterError or didValidate events.",
+            "default": {},
+            "properties": {
+               "i18nFailedLoadingResource": { "type": [ "object", "string" ] }
+            }
+         },
+         "auth": {
+            "type": "object",
+            "description": "Authorization with the GitHub API",
+            "properties": {
+               "resource": {
+                  "type": "string",
+                  "description": "The name of the authorization resource to listen for.",
+                  "format": "topic"
+               },
+               "flag": {
+                  "type": "string",
+                  "description": "The name of the flag indicating the current authentication state.",
+                  "format": "topic"
+               }
+            }
+         }
+      }
+   }
+}
