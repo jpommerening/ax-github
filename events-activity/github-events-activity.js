@@ -6,6 +6,7 @@
 define( [
    'json!./widget.json',
    'json-patch',
+   'es6!../lib/constants',
    'es6!../lib/get-pointer',
    'es6!../lib/handle-auth',
    'es6!../lib/wait-for-event',
@@ -16,6 +17,7 @@ define( [
 ], function(
    spec,
    jsonPatch,
+   constants,
    getPointer,
    handleAuth,
    waitForEvent,
@@ -49,20 +51,24 @@ define( [
 
       var baseOptions = {
          headers: {
-            Accept: 'application/vnd.github.v3+json'
-         }
+            Accept: constants.MEDIA_TYPE
+         },
+         events: features.events.types
       };
 
       var streams = [];
-      var ready = handleAuth( eventBus, features, 'auth' )
+      var queue = handleAuth( eventBus, features, 'auth' )
                      .then( handleAuth.setAuthHeader( baseOptions.headers ) )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
-      var queue = ready;
 
       var publisher = throttledPublisherForFeature( this, 'events' );
 
       baseOptions.onEvent = deduplicate( publisher.push );
       baseOptions.onError = publisher.error;
+
+      if( features.events.sources.init ) {
+         pushQueue( handleReplace, features.events.sources.init );
+      }
 
       if( features.events.sources.resource ) {
          eventBus.subscribe( 'didReplace.' + features.events.sources.resource, function( event ) {
@@ -71,8 +77,6 @@ define( [
          eventBus.subscribe( 'didUpdate.' + features.events.sources.resource, function( event ) {
             return pushQueue( handleUpdate, event.patches );
          } );
-      } else if( features.events.sources.init ) {
-         pushQueue( handleReplace, features.events.sources.init );
       }
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
@@ -125,14 +129,12 @@ define( [
 
       function provideStream( source ) {
          var options = Object.create( baseOptions );
-         var follow = features.events.sources.follow;
+         var fields = features.events.sources.fields;
 
-         options.events = source.events;
-
-         return extractPointers( source, follow, function( url ) {
+         return extractPointers( source, fields, function( url ) {
             var match = /^(https?|wss?):/.exec( url );
-            var type = source.type || match[ 1 ];
-            var stream = new EventStream[ type ]( options );
+            var proto = match[ 1 ] || 'http';
+            var stream = new EventStream[ proto ]( options );
             stream.connect( url );
             return stream;
          } );

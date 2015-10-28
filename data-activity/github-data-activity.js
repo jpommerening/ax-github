@@ -41,16 +41,19 @@ define( [
       var baseOptions = {
          method: 'GET',
          headers: {
-            Accept: constants.MIME_TYPE
+            Accept: constants.MEDIA_TYPE
          }
       };
 
-      var ready = handleAuth( eventBus, features, 'auth' )
+      var queue = handleAuth( eventBus, features, 'auth' )
                      .then( handleAuth.setAuthHeader( baseOptions.headers ) )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
-      var queue = ready;
 
       var publisher = throttledPublisherForFeature( this, 'data' );
+
+      if( features.data.sources.init ) {
+         pushQueue( handleReplace, features.data.sources.init );
+      }
 
       if( features.data.sources.resource ) {
          eventBus.subscribe( 'didReplace.' + features.data.sources.resource, function( event ) {
@@ -59,8 +62,6 @@ define( [
          eventBus.subscribe( 'didUpdate.' + features.data.sources.resource, function( event ) {
             return pushQueue( handleUpdate, event.patches );
          } );
-      } else if( features.data.sources.init ) {
-         pushQueue( handleReplace, features.data.sources.init );
       }
 
       eventBus.subscribe( 'beginLifecycleRequest', function() {
@@ -84,15 +85,38 @@ define( [
          return Promise.all( patches.map( withPatchValue( provideResource ) ) ).then( publisher.update );
       }
 
+      function handleExpansions() {
+      }
+
+      function expand( url, expansion ) {
+         var template = URITemplate( url ).parse();
+         var variables = template.parts.reduce( function( variables, part ) {
+            if( part.variables instanceof Array ) {
+               return variables.concat( part.variables );
+            }
+            return variables;
+         }, [] ).map( function( variable ) {
+            return variable.name;
+         } );
+         var parameters = Object.keys( expansion ).reduce( function( parameters, key ) {
+            if( variables.indexOf( key ) < 0 ) {
+               parameters[ key ] = expansion[ key ];
+            }
+            return parameters;
+         }, {} );
+
+         return URI( template.expand( expansion ) ).query( parameters );
+      }
+
       function provideResources( sources ) {
          return sources.map( provideResource );
       }
 
       function provideResource( source ) {
          var options = Object.create( baseOptions );
-         var follow = features.data.sources.follow;
+         var fields = features.data.sources.fields;
 
-         return extractPointers( source, follow, function( url ) {
+         return extractPointers( source, fields, function( url ) {
             return url && fetchAll( url, options ).then( null, function( error ) {
                publisher.error( 'HTTP_GET', 'i18nFailedLoadingResource', { url: url }, error );
                return null;

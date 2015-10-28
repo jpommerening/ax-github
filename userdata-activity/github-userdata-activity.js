@@ -37,7 +37,7 @@ define( [
       var baseOptions = {
          method: 'GET',
          headers: {
-            Accept: constants.MIME_TYPE
+            Accept: constants.MEDIA_TYPE
          }
       };
 
@@ -87,14 +87,6 @@ define( [
       eventBus.subscribe( 'endLifecycleRequest', function() {
       } );
 
-      function setAuthHeader( data ) {
-         if( data && data.access_token ) {
-            baseOptions.headers[ 'Authorization' ] = 'token ' + data.access_token;
-         } else {
-            delete baseOptions.headers[ 'Authorization' ];
-         }
-      }
-
       function request( feature ) {
          return function( data ) {
             var options = Object.create( baseOptions );
@@ -125,7 +117,6 @@ define( [
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
    function encodeArguments( object ) {
       return Object.keys( object ).filter( function( key ) {
