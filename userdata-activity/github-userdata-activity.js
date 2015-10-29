@@ -51,7 +51,9 @@ define( [
          .then( function( response ) {
             var promise = response.json();
 
-            if( features.user.resource ) {
+            if( response.status >= 400 ) {
+               promise = Promise.reject( promise );
+            } else if( features.user.resource ) {
                promise = promise.then( publish( 'user' ) );
             }
 
