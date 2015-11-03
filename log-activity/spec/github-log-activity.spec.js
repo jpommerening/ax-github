@@ -9,7 +9,7 @@ define( [
 ], function( descriptor, testing ) {
    'use strict';
 
-   describe( 'A GithubDataActivity', function() {
+   describe( 'A GithubLogActivity', function() {
 
       beforeEach( testing.createSetupForWidget( descriptor ) );
       beforeEach( testing.widget.load );
@@ -17,9 +17,7 @@ define( [
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      it( 'still needs some tests.', function() {
-         console.log( testing.widget );
-      } );
+      it( 'still needs some tests.' );
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
 

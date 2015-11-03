@@ -6,21 +6,25 @@
 define( [
    'json!./widget.json',
    'es6!../lib/constants',
-   'es6!../lib/handle-auth',
-   'es6!../lib/wait-for-event',
-   'es6!../lib/with-patch-value',
+   'es6!../lib/expand-url',
    'es6!../lib/extract-pointers',
+   'es6!../lib/fetch-all',
+   'es6!../lib/handle-auth',
+   'es6!../lib/resource-flattener',
    'es6!../lib/throttled-publisher',
-   'es6!../lib/fetch-all'
+   'es6!../lib/wait-for-event',
+   'es6!../lib/with-patch-value'
 ], function(
    spec,
    constants,
-   handleAuth,
-   waitForEvent,
-   withPatchValue,
+   expandUrl,
    extractPointers,
+   fetchAll,
+   handleAuth,
+   resourceFlattener,
    throttledPublisherForFeature,
-   fetchAll
+   waitForEvent,
+   withPatchValue
 ) {
    'use strict';
 
@@ -45,11 +49,17 @@ define( [
          }
       };
 
+      var expand = Promise.resolve( {} );
+
       var queue = handleAuth( eventBus, features, 'auth' )
                      .then( handleAuth.setAuthHeader( baseOptions.headers ) )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
 
       var publisher = throttledPublisherForFeature( this, 'data' );
+
+      if( features.data.flatten ) {
+         publisher = resourceFlattener().wrap( publisher );
+      }
 
       if( features.data.sources.init ) {
          pushQueue( handleReplace, features.data.sources.init );
@@ -85,29 +95,6 @@ define( [
          return Promise.all( patches.map( withPatchValue( provideResource ) ) ).then( publisher.update );
       }
 
-      function handleExpansions() {
-      }
-
-      function expand( url, expansion ) {
-         var template = URITemplate( url ).parse();
-         var variables = template.parts.reduce( function( variables, part ) {
-            if( part.variables instanceof Array ) {
-               return variables.concat( part.variables );
-            }
-            return variables;
-         }, [] ).map( function( variable ) {
-            return variable.name;
-         } );
-         var parameters = Object.keys( expansion ).reduce( function( parameters, key ) {
-            if( variables.indexOf( key ) < 0 ) {
-               parameters[ key ] = expansion[ key ];
-            }
-            return parameters;
-         }, {} );
-
-         return URI( template.expand( expansion ) ).query( parameters );
-      }
-
       function provideResources( sources ) {
          return sources.map( provideResource );
       }
@@ -116,8 +103,14 @@ define( [
          var options = Object.create( baseOptions );
          var fields = features.data.sources.fields;
 
-         return extractPointers( source, fields, function( url ) {
-            return url && fetchAll( url, options ).then( null, function( error ) {
+         return extractPointers( source, fields, function( template ) {
+            if( !template ) return null;
+
+            return expand.then( function( expansions ) {
+               return expandUrl( template, expansions ).toString();
+            } ).then( function( url ) {
+               return fetchAll( url, options );
+            } ).then( null, function( error ) {
                publisher.error( 'HTTP_GET', 'i18nFailedLoadingResource', { url: url }, error );
                return null;
             } );

@@ -5,22 +5,26 @@
  */
 define( [
    'json!./widget.json',
+   'es6!../lib/resource-flattener',
    'es6!../lib/constants',
-   'es6!../lib/expand-url',
-   'es6!../lib/extract-pointers',
    'es6!../lib/handle-auth',
-   'es6!../lib/throttled-publisher',
    'es6!../lib/wait-for-event',
-   'es6!../lib/with-patch-value'
+   'es6!../lib/with-patch-value',
+   'es6!../lib/extract-pointers',
+   'es6!../lib/expand-url',
+   'es6!../lib/throttled-publisher',
+   'es6!../lib/fetch-all'
 ], function(
    spec,
+   resourceFlattener,
    constants,
-   expandUrl,
-   extractPointers,
    handleAuth,
-   throttledPublisherForFeature,
    waitForEvent,
-   withPatchValue
+   withPatchValue,
+   extractPointers,
+   expandUrl,
+   throttledPublisherForFeature,
+   fetchAll
 ) {
    'use strict';
 
@@ -41,29 +45,25 @@ define( [
       var baseOptions = {
          method: 'GET',
          headers: {
-            Accept: constants.CUSTOM_MEDIA_TYPES[ features.contents.type ] || constants.MEDIA_TYPE
+            Accept: constants.MEDIA_TYPE
          }
       };
-
-      var expand = Promise.resolve( {
-         path: features.contents.path
-      } );
 
       var queue = handleAuth( eventBus, features, 'auth' )
                      .then( handleAuth.setAuthHeader( baseOptions.headers ) )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
 
-      var publisher = throttledPublisherForFeature( this, 'contents' );
+      var publisher = resourceFlattener().wrap( throttledPublisherForFeature( this, 'log' ) );
 
-      if( features.contents.sources.init ) {
-         pushQueue( handleReplace, features.contents.sources.init );
+      if( features.log.sources.init ) {
+         pushQueue( handleReplace, features.log.sources.init );
       }
 
-      if( features.contents.sources.resource ) {
-         eventBus.subscribe( 'didReplace.' + features.contents.sources.resource, function( event ) {
+      if( features.log.sources.resource ) {
+         eventBus.subscribe( 'didReplace.' + features.log.sources.resource, function( event ) {
             return pushQueue( handleReplace, event.data );
          } );
-         eventBus.subscribe( 'didUpdate.' + features.contents.sources.resource, function( event ) {
+         eventBus.subscribe( 'didUpdate.' + features.log.sources.resource, function( event ) {
             return pushQueue( handleUpdate, event.patches );
          } );
       }
@@ -93,46 +93,46 @@ define( [
          return sources.map( provideResource );
       }
 
+      var stop = stopOnKnownCommit();
+
       function provideResource( source ) {
          var options = Object.create( baseOptions );
-         var fields = features.contents.sources.fields;
-         var path = features.contents.path;
+         var fields = features.log.sources.fields;
 
-         return extractPointers( source, fields, function( template ) {
-            if( !template ) return null;
-
-            return expand.then( function( expansions ) {
-               return expandUrl( template, expansions ).toString();
-            } ).then( function( url ) {
-               return fetch( url, options );
-            } ).then( function( response ) {
-               if( response.headers.get( 'Content-Type' ).match( /.*\.json/ ) ) {
-                  return response.json();
-               } else {
-                  return response.text();
-               }
-            }, function( error ) {
+         return extractPointers( source, fields, function( url ) {
+            /* temporary hack: simulate the future "log-activity", instead we should use proper expansion */
+            var match = /^(.*\/commits)\/([0-9a-f]+)$/.exec( url || '' );
+            if( match ) {
+               var sha = match[ 2 ];
+               url = match[1] + '?sha=' + sha;
+            }
+            /* hack end */
+            return url && fetchAll( url, options, match && stop ).then( null, function( error ) {
                publisher.error( 'HTTP_GET', 'i18nFailedLoadingResource', { url: url }, error );
                return null;
             } );
          } );
       }
 
-      if( features.contents.ref && features.contents.ref.parameter ) {
-         eventBus.subscribe( 'didNavigate', function( event ) {
-            expand = expand.then( function( expand ) {
-               if( event.data[ 'version' ] ) {
-                  expand.ref = event.data.version;
-               } else {
-                  delete expand.ref;
-               }
-               return expand;
-            } );
-         } );
-      }
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+   function stopOnKnownCommit() {
+      var commits = {};
+      return function( json ) {
+         return json.then( function( data ) {
+            for( var i = 0; i < data.length; i++ ) {
+               var sha = data[ i ].sha;
+               if( commits[ sha ] ) {
+                  return true;
+               }
+               commits[ sha ] = true;
+            }
+            return false;
+         } );
+      }
+   }
 
    return {
       name: spec.name,

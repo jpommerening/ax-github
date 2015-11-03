@@ -1,6 +1,6 @@
 {
-   "name": "github-contents-activity",
-   "description": "Request versioned file contents data from GitHub",
+   "name": "github-log-activity",
+   "description": "Request Git logs from GitHub",
 
    "integration": {
       "technology": "plain",
@@ -11,35 +11,15 @@
       "$schema": "http://json-schema.org/draft-04/schema#",
       "type": "object",
       "properties": {
-         "contents": {
+         "log": {
             "type": "object",
-            "description": "Configuration for publishing GitHub data.",
+            "description": "Configuration for publishing Git logs.",
             "required": [ "resource", "sources" ],
             "properties": {
                "resource": {
                   "type": "string",
-                  "description": "The name of the resource under which to publish data.",
+                  "description": "The name of the resource under which to publish resources.",
                   "format": "topic"
-               },
-               "path": {
-                  "type": "string",
-                  "description": "The file path to download."
-               },
-               "ref": {
-                  "type": [ "string", "object" ],
-                  "default": {
-                     "parameter": "version"
-                  },
-                  "properties": {
-                     "parameter": {
-                        "type": "string"
-                     }
-                  }
-               },
-               "type": {
-                  "type": "string",
-                  "description": "A custom media type to request (see https://developer.github.com/v3/repos/contents/#custom-media-types).",
-                  "valid": [ "raw", "html" ]
                },
                "sources": {
                   "type": "object",
@@ -47,18 +27,17 @@
                   "properties": {
                      "resource": {
                         "type": "string",
-                        "description": "The name of the resource supplying the the sources.",
+                        "description": "The name of the resource supplying the URLs.",
                         "format": "topic"
                      },
                      "fields": {
                         "type": [ "string", "array", "object" ],
-                        "description": "Which fields to follow for URLs. Maps all leaves to resources.",
-                        "default": "contents_url"
+                        "description": "Which fields to follow for URLs. Maps all leaves to resources. Each URL should point to a commit resource.",
+                        "default": "commit.url"
                      },
                      "init": {
                         "type": "array",
-                        "description": "If no resource was given use this array instead.",
-                        "default": []
+                        "description": "Use this array as initial value."
                      }
                   }
                }

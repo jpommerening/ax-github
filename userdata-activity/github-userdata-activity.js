@@ -73,10 +73,6 @@ define( [
          data[ feature ] = data.user
             .then( request( feature ) )
             .then( fetchAll )
-            .then( null, function( error ) {
-               //errorPublisher( 'HTTP_GET', 'messages.i18nFailedLoadingResource', { url: url }, error );
-               return null;
-            } )
             .then( publish( feature ) );
          return data;
       }, {

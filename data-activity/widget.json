@@ -40,6 +40,32 @@
                         "description": "Use this array as initial value."
                      }
                   }
+               },
+               "expand": {
+                  "type": "object",
+                  "description": "A map of URL template parameters to expand.",
+                  "default": {},
+                  "additionalalProperties": {
+                     "type": [ "string", "object" ],
+                     "description": "Either a static string to use for expansion, or a resource object.",
+                     "properties": {
+                        "resource": {
+                           "type": "string",
+                           "format": "topic"
+                        },
+                        "fields": {
+                           "type": [ "string", "array", "object" ]
+                        },
+                        "init": {
+                           "type": "array"
+                        }
+                     }
+                  }
+               },
+               "flatten": {
+                  "type": [ "boolean", "number" ],
+                  "description": "Flatten the given number (or 1, if `true`) of nested arrays of the result resource.",
+                  "default": false
                }
             }
          },
