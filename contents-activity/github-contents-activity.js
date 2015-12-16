@@ -8,9 +8,7 @@ define( [
    'es6!../lib/constants',
    'es6!../lib/expand-url',
    'es6!../lib/extract-pointers',
-   'es6!../lib/fetch-all',
    'es6!../lib/handle-auth',
-   'es6!../lib/resource-flattener',
    'es6!../lib/throttled-publisher',
    'es6!../lib/wait-for-event',
    'es6!../lib/with-patch-value'
@@ -19,9 +17,7 @@ define( [
    constants,
    expandUrl,
    extractPointers,
-   fetchAll,
    handleAuth,
-   resourceFlattener,
    throttledPublisherForFeature,
    waitForEvent,
    withPatchValue
@@ -45,31 +41,29 @@ define( [
       var baseOptions = {
          method: 'GET',
          headers: {
-            Accept: constants.MEDIA_TYPE
+            Accept: constants.CUSTOM_MEDIA_TYPES[ features.contents.type ] || constants.MEDIA_TYPE
          }
       };
 
-      var expand = Promise.resolve( {} );
+      var expand = Promise.resolve( {
+         path: features.contents.path
+      } );
 
       var queue = handleAuth( eventBus, features, 'auth' )
                      .then( handleAuth.setAuthHeader( baseOptions.headers ) )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
 
-      var publisher = throttledPublisherForFeature( this, 'data' );
+      var publisher = throttledPublisherForFeature( this, 'contents' );
 
-      if( features.data.flatten ) {
-         publisher = resourceFlattener().wrap( publisher );
+      if( features.contents.sources.init ) {
+         pushQueue( handleReplace, features.contents.sources.init );
       }
 
-      if( features.data.sources.init ) {
-         pushQueue( handleReplace, features.data.sources.init );
-      }
-
-      if( features.data.sources.resource ) {
-         eventBus.subscribe( 'didReplace.' + features.data.sources.resource, function( event ) {
+      if( features.contents.sources.resource ) {
+         eventBus.subscribe( 'didReplace.' + features.contents.sources.resource, function( event ) {
             return pushQueue( handleReplace, event.data );
          } );
-         eventBus.subscribe( 'didUpdate.' + features.data.sources.resource, function( event ) {
+         eventBus.subscribe( 'didUpdate.' + features.contents.sources.resource, function( event ) {
             return pushQueue( handleUpdate, event.patches );
          } );
       }
@@ -101,7 +95,8 @@ define( [
 
       function provideResource( source ) {
          var options = Object.create( baseOptions );
-         var fields = features.data.sources.fields;
+         var fields = features.contents.sources.fields;
+         var path = features.contents.path;
 
          return extractPointers( source, fields, function( template ) {
             if( !template ) return null;
@@ -109,14 +104,32 @@ define( [
             return expand.then( function( expansions ) {
                return expandUrl( template, expansions ).toString();
             } ).then( function( url ) {
-               return fetchAll( url, options );
-            } ).then( null, function( error ) {
+               return fetch( url, options );
+            } ).then( function( response ) {
+               if( response.headers.get( 'Content-Type' ).match( /.*\.json/ ) ) {
+                  return response.json();
+               } else {
+                  return response.text();
+               }
+            }, function( error ) {
                publisher.error( 'HTTP_GET', 'i18nFailedLoadingResource', { url: url }, error );
                return null;
             } );
          } );
       }
 
+      if( features.contents.ref && features.contents.ref.parameter ) {
+         eventBus.subscribe( 'didNavigate', function( event ) {
+            expand = expand.then( function( expand ) {
+               if( event.data[ 'version' ] ) {
+                  expand.ref = event.data.version;
+               } else {
+                  delete expand.ref;
+               }
+               return expand;
+            } );
+         } );
+      }
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////

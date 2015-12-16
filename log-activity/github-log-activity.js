@@ -5,26 +5,26 @@
  */
 define( [
    'json!./widget.json',
-   'es6!../lib/constants',
-   'es6!../lib/expand-url',
-   'es6!../lib/extract-pointers',
-   'es6!../lib/fetch-all',
-   'es6!../lib/handle-auth',
    'es6!../lib/resource-flattener',
-   'es6!../lib/throttled-publisher',
+   'es6!../lib/constants',
+   'es6!../lib/handle-auth',
    'es6!../lib/wait-for-event',
-   'es6!../lib/with-patch-value'
+   'es6!../lib/with-patch-value',
+   'es6!../lib/extract-pointers',
+   'es6!../lib/expand-url',
+   'es6!../lib/throttled-publisher',
+   'es6!../lib/fetch-all'
 ], function(
    spec,
-   constants,
-   expandUrl,
-   extractPointers,
-   fetchAll,
-   handleAuth,
    resourceFlattener,
-   throttledPublisherForFeature,
+   constants,
+   handleAuth,
    waitForEvent,
-   withPatchValue
+   withPatchValue,
+   extractPointers,
+   expandUrl,
+   throttledPublisherForFeature,
+   fetchAll
 ) {
    'use strict';
 
@@ -49,27 +49,21 @@ define( [
          }
       };
 
-      var expand = Promise.resolve( {} );
-
       var queue = handleAuth( eventBus, features, 'auth' )
                      .then( handleAuth.setAuthHeader( baseOptions.headers ) )
                      .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
 
-      var publisher = throttledPublisherForFeature( this, 'data' );
+      var publisher = resourceFlattener().wrap( throttledPublisherForFeature( this, 'log' ) );
 
-      if( features.data.flatten ) {
-         publisher = resourceFlattener().wrap( publisher );
+      if( features.log.sources.init ) {
+         pushQueue( handleReplace, features.log.sources.init );
       }
 
-      if( features.data.sources.init ) {
-         pushQueue( handleReplace, features.data.sources.init );
-      }
-
-      if( features.data.sources.resource ) {
-         eventBus.subscribe( 'didReplace.' + features.data.sources.resource, function( event ) {
+      if( features.log.sources.resource ) {
+         eventBus.subscribe( 'didReplace.' + features.log.sources.resource, function( event ) {
             return pushQueue( handleReplace, event.data );
          } );
-         eventBus.subscribe( 'didUpdate.' + features.data.sources.resource, function( event ) {
+         eventBus.subscribe( 'didUpdate.' + features.log.sources.resource, function( event ) {
             return pushQueue( handleUpdate, event.patches );
          } );
       }
@@ -99,18 +93,21 @@ define( [
          return sources.map( provideResource );
       }
 
+      var stop = stopOnKnownCommit();
+
       function provideResource( source ) {
          var options = Object.create( baseOptions );
-         var fields = features.data.sources.fields;
+         var fields = features.log.sources.fields;
 
-         return extractPointers( source, fields, function( template ) {
-            if( !template ) return null;
-
-            return expand.then( function( expansions ) {
-               return expandUrl( template, expansions ).toString();
-            } ).then( function( url ) {
-               return fetchAll( url, options );
-            } ).then( null, function( error ) {
+         return extractPointers( source, fields, function( url ) {
+            /* temporary hack: simulate the future "log-activity", instead we should use proper expansion */
+            var match = /^(.*\/commits)\/([0-9a-f]+)$/.exec( url || '' );
+            if( match ) {
+               var sha = match[ 2 ];
+               url = match[1] + '?sha=' + sha;
+            }
+            /* hack end */
+            return url && fetchAll( url, options, match && stop ).then( null, function( error ) {
                publisher.error( 'HTTP_GET', 'i18nFailedLoadingResource', { url: url }, error );
                return null;
             } );
@@ -120,6 +117,22 @@ define( [
    }
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+   function stopOnKnownCommit() {
+      var commits = {};
+      return function( json ) {
+         return json.then( function( data ) {
+            for( var i = 0; i < data.length; i++ ) {
+               var sha = data[ i ].sha;
+               if( commits[ sha ] ) {
+                  return true;
+               }
+               commits[ sha ] = true;
+            }
+            return false;
+         } );
+      }
+   }
 
    return {
       name: spec.name,

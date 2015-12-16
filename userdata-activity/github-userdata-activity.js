@@ -4,11 +4,20 @@
  * http://laxarjs.org
  */
 define( [
+   'json!./widget.json',
    'laxar-patterns',
-   '../lib/handle-auth',
-   '../lib/wait-for-event',
-   '../lib/fetch-all'
-], function( patterns, handleAuth, waitForEvent, fetchAll ) {
+   'es6!../lib/constants',
+   'es6!../lib/handle-auth',
+   'es6!../lib/wait-for-event',
+   'es6!../lib/fetch-all'
+], function(
+   spec,
+   patterns,
+   constants,
+   handleAuth,
+   waitForEvent,
+   fetchAll
+) {
    'use strict';
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,17 +34,16 @@ define( [
       this.eventBus = eventBus;
       this.features = features;
 
-      var ready = handleAuth( eventBus, features, 'auth' )
-                     .then( setAuthHeader )
-                     .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
-
-
       var baseOptions = {
          method: 'GET',
          headers: {
-            Accept: 'application/vnd.github.v3+json'
+            Accept: constants.MEDIA_TYPE
          }
       };
+
+      var ready = handleAuth( eventBus, features, 'auth' )
+                     .then( handleAuth.setAuthHeader( baseOptions.headers ) )
+                     .then( waitForEvent( eventBus, 'beginLifecycleRequest' ) );
 
       var user = ready
          .then( request( 'user' ) )
@@ -43,7 +51,9 @@ define( [
          .then( function( response ) {
             var promise = response.json();
 
-            if( features.user.resource ) {
+            if( response.status >= 400 ) {
+               promise = Promise.reject( promise );
+            } else if( features.user.resource ) {
                promise = promise.then( publish( 'user' ) );
             }
 
@@ -74,14 +84,6 @@ define( [
 
       eventBus.subscribe( 'endLifecycleRequest', function() {
       } );
-
-      function setAuthHeader( data ) {
-         if( data && data.access_token ) {
-            baseOptions.headers[ 'Authorization' ] = 'token ' + data.access_token;
-         } else {
-            delete baseOptions.headers[ 'Authorization' ];
-         }
-      }
 
       function request( feature ) {
          return function( data ) {
@@ -114,7 +116,6 @@ define( [
 
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
    function encodeArguments( object ) {
       return Object.keys( object ).filter( function( key ) {
          return typeof key !== 'undefined' && key !== 'resource' && key !== 'url';
@@ -126,7 +127,7 @@ define( [
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    return {
-      name: 'github-userdata-activity',
+      name: spec.name,
       create: Controller.create,
       injections: Controller.injections
    };

@@ -6,9 +6,9 @@
 ( function( global ) {
    'use strict';
    global.laxarSpec = {
-      title: 'GithubUserdataActivity Specification',
+      title: 'GithubContentsActivity Specification',
       tests: [
-         'github-userdata-activity.spec'
+         'github-contents-activity.spec'
       ],
       testRunner: 'laxar-testing',
       jasmineMajorVersion: 2

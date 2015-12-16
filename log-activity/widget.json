@@ -1,6 +1,6 @@
 {
-   "name": "github-events-activity",
-   "description": "Query events (commits, tags, issues) from GitHub",
+   "name": "github-log-activity",
+   "description": "Request Git logs from GitHub",
 
    "integration": {
       "technology": "plain",
@@ -11,14 +11,14 @@
       "$schema": "http://json-schema.org/draft-04/schema#",
       "type": "object",
       "properties": {
-         "events": {
+         "log": {
             "type": "object",
-            "description": "Configuration for publishing GitHub events.",
+            "description": "Configuration for publishing Git logs.",
             "required": [ "resource", "sources" ],
             "properties": {
                "resource": {
                   "type": "string",
-                  "description": "The name of the resource under which to publish events.",
+                  "description": "The name of the resource under which to publish resources.",
                   "format": "topic"
                },
                "sources": {
@@ -32,22 +32,14 @@
                      },
                      "fields": {
                         "type": [ "string", "array", "object" ],
-                        "description": "Which fields to follow for URLs. Maps all leaves to resources.",
-                        "default": "events_url"
+                        "description": "Which fields to follow for URLs. Maps all leaves to resources. Each URL should point to a commit resource.",
+                        "default": "commit.url"
                      },
                      "init": {
                         "type": "array",
-                        "description": "If no resource was given use this array instead."
+                        "description": "Use this array as initial value."
                      }
                   }
-               },
-               "types": {
-                  "type": "array",
-                  "description": "Which events to monitor. Refer to the 'Event names' (lower_case) listed at https://developer.github.com/v3/activity/events/types/ for details.",
-                  "items": {
-                     "type": "string"
-                  },
-                  "default": [ "*" ]
                }
             }
          },
@@ -56,8 +48,7 @@
             "description": "Configuration of messages published via didEncounterError or didValidate events.",
             "default": {},
             "properties": {
-               "i18nFailedLoadingResource": { "type": [ "object", "string" ] },
-               "i18nEncounteredSocketIOError": { "type": [ "object", "string" ] }
+               "i18nFailedLoadingResource": { "type": [ "object", "string" ] }
             }
          },
          "auth": {
