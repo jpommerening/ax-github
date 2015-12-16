@@ -24,6 +24,16 @@ to your `require_config.js` file:
 Additionally the activities heavily use `window.fetch` and `window.Promise`
 so if your browser does not support these, you'll have to use a shim.
 
+## Example
+
+You can wire up multiple of the supplied activities in your page. Their
+configuration is intended to be easily composable.
+The following example …
+
+ - fetches info about the authenticated user and the user's repositories
+ - fetches issue data for the repositories
+ - polls for events happening in the repositories
+
 ```json
 "activies": [
 
