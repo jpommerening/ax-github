@@ -49,6 +49,10 @@
                      "type": [ "string", "object" ],
                      "description": "Either a static string to use for expansion, or a resource object.",
                      "properties": {
+                        "parameter": {
+                           "type": "string",
+                           "format": "topic"
+                        },
                         "resource": {
                            "type": "string",
                            "format": "topic"

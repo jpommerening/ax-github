@@ -22,7 +22,7 @@
                   "format": "topic"
                },
                "path": {
-                  "type": "string",
+                  "type": [ "string" ],
                   "description": "The file path to download."
                },
                "ref": {
